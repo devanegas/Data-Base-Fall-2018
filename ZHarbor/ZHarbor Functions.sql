@@ -147,9 +147,7 @@ declare @inserted_id numeric (18,0)
 	select @actual_id = i.buyer_id
 	from inserted i
 
-	select @first = a.starting_price
-	from ZHarborAuction a
-	where a.id = @auction
+	select @first = a.starting_price from ZHarborAuction a where a.id = @auction
 
 	select top 1 @current_valid_bid = b.current_bid
 	from ZHarborAuction a
@@ -157,9 +155,7 @@ declare @inserted_id numeric (18,0)
 			where b.auction_id = @auction
 			order by current_bid desc
 
-	select @end_time = a.end_time, @status = a.status
-	from ZHarborAuction a
-	where a.id = @auction
+	select @end_time = a.end_time, @status = a.status from ZHarborAuction a where a.id = @auction
 
 
 	declare bid_Cursor cursor for 
@@ -174,11 +170,6 @@ declare @inserted_id numeric (18,0)
 	fetch next from bid_Cursor
 	into @bid_Second
 
-	
-	/*
-	print(@bid_Top)
-	print(@bid_Second)
-	*/
 
 	close bid_cursor
 	deallocate bid_cursor;
@@ -265,7 +256,7 @@ declare @inserted_id numeric (18,0)
 					*/
 				END
 
-			END
+		END
 		else
 				BEGIN
 				
@@ -296,13 +287,19 @@ BEGIN
 	declare @closing_price money
 	declare @listing_price money
 	declare @fee money
+	declare @buyItNowPrice money
 
 	select @auction_id = i.id
+	from inserted i
+	
+	select @buyItNowPrice = i.buyNow
 	from inserted i
 
 	select @listing_price = dbo.whichListing(i.starting_price)
 	from inserted i
 	
+	
+
 	UPDATE ZHarborAuction
 	SET starting_time = CURRENT_TIMESTAMP, [status] = 'ACTIVE', listing_fee = @listing_price
 	WHERE id = @auction_id;
@@ -461,4 +458,38 @@ END
 GO
 
 ---------------------
+
+
+drop procedure buyItNow
+GO
+create procedure buyItNow @buyer_id numeric(18,0), @auction_id numeric(18,0)
+as
+BEGIN
+	declare @buyItNowPrice money
+	declare @status varchar(30)
+
+	select @buyItNowPrice = a.buyNow
+	from ZHarborAuction a
+	where a.id = @auction_id
+
+	select @status = a.[status]
+	from ZHarborAuction a
+	where a.id = @auction_id
+
+
+	if(@buyItNowPrice != NULL and @status = 'ACTIVE')
+		BEGIN
+			insert into ZHarborBidHistory values (next value for id_iterator, @auction_id,  @buyer_id, @buyItNowPrice, CURRENT_TIMESTAMP);
+
+			UPDATE ZHarborAuction
+				SET end_price = @buyItNowPrice, [status] = 'ENDED'
+				WHERE id = @auction_id;
+
+		END
+	else
+		--DO NOTHING
+		print('Sorry, Invalid Action')
+	
+END
+GO
 
