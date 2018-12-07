@@ -14,9 +14,9 @@ insert into ZHarborSeller values (0, 10)
 insert into ZHarborSeller values (2, 10) 
 insert into ZHarborSeller values (4, 10) 
 
-insert into ZHarborAuction values (0, 0, 100, NULL, '2019-11-29 19:15:00.000', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL);
-insert into ZHarborAuction values (1, 0, 250, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Yellow Chair', 'Its a yellow chair!', NULL, NULL);
-insert into ZHarborAuction values (2, 2, 360, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Blue Chair', 'Its a blue chair!', NULL, NULL);
+insert into ZHarborAuction values (0, 0, 100, NULL, '2019-11-29 19:15:00.000', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL, NULL);
+insert into ZHarborAuction values (1, 0, 250, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Yellow Chair', 'Its a yellow chair!', NULL, NULL, NULL);
+insert into ZHarborAuction values (2, 2, 360, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Blue Chair', 'Its a blue chair!', NULL, NULL, NULL);
 
 
 

@@ -207,7 +207,7 @@ delete from ZHarborBidLog;
 delete from ZHarborAuction;
 
 --Then This
-insert into ZHarborAuction values (0, 0, 0.01, NULL, '2019-11-29 19:15:00.000', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL);
+insert into ZHarborAuction values (0, 0, 0.01, NULL, '2019-11-29 19:15:00.000', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL, NULL);
 
 --Then this
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 0.10
@@ -314,8 +314,8 @@ delete from ZHarborBidHistory;
 delete from ZHarborBidLog;
 delete from ZHarborAuction;
 
-insert into ZHarborAuction values (0, 0, 100, NULL, CURRENT_TIMESTAMP + '00:00:10', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL);
-insert into ZHarborAuction values (1, 0, 250, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Yellow Chair', 'Its a yellow chair!', NULL, NULL);
+insert into ZHarborAuction values (0, 0, 100, NULL, CURRENT_TIMESTAMP + '00:00:10', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL, NULL);
+insert into ZHarborAuction values (1, 0, 250, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Yellow Chair', 'Its a yellow chair!', NULL, NULL, NULL);
 
 
 --Insert a couple of rows
@@ -336,8 +336,8 @@ GO 10
 
 
 select * from ZHarborBidHistory
-
 select * from ZHarborAuction
+
 select case (select top 1 a.[status] from ZHarborBidHistory h inner join ZHarborAuction a on (a.id = h.auction_id)) when 'ENDED' then 'PASS' else 'FAIL' END correctStatus;
 select case (select top 1 a.end_price from ZHarborBidHistory h inner join ZHarborAuction a on (a.id = h.auction_id)) when 112.50 then 'PASS' else 'FAIL' END correctEndPrice;
 
@@ -371,8 +371,33 @@ select * from ZHarborAuction
 EXEC dbo.sellerStats @seller_id = 0 
 EXEC dbo.sellerStats @seller_id = 1
 ----------------------------------------------------------------------
+
+delete from ZHarborBidHistory;
+delete from ZHarborBidLog;
+delete from ZHarborAuction;
+
+insert into ZHarborAuction values (1, 0, 250, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Yellow Chair', 'Its a yellow chair!', NULL, NULL, 50);
+
+EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 1, @amount = 500
+EXEC dbo.buyItNow @buyer_id = 1, @auction_id = 1 
+EXEC dbo.buyItNow @buyer_id = 2, @auction_id = 1 
+
+
+select * from ZHarborBidHistory
+select * from ZHarborAuction
+
+
+GO
+EXEC dbo.isValid @auction_id = 1
+WAITFOR DELAY '00:00:01'
+GO 10
+
+select * from ZHarborBidHistory
+select * from ZHarborAuction
+
+----------------------------------------------------------------------
 --////////////////////////////////////////////////////////////////////
---------------------------ALL TESTS END HERE--------------------------
+--------------------------ALL buyItNow END HERE--------------------------
 --\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ---------------------------------------------------------------------
 

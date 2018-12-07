@@ -301,7 +301,7 @@ BEGIN
 	
 
 	UPDATE ZHarborAuction
-	SET starting_time = CURRENT_TIMESTAMP, [status] = 'ACTIVE', listing_fee = @listing_price
+	SET starting_time = CURRENT_TIMESTAMP, [status] = 'ACTIVE', listing_fee = @listing_price, buyNow = @buyItNowPrice
 	WHERE id = @auction_id;
 
 END
@@ -373,6 +373,9 @@ BEGIN
 	declare @end_time datetime
 	declare @winner varchar (30)
 	declare @winner_id numeric (18,0)
+	declare @closing_fee money
+	declare @end_price money
+	
 
 	select @status = a.status
 	from ZHarborAuction a
@@ -381,14 +384,43 @@ BEGIN
 	select @end_time = a.end_time, @status = a.status
 	from ZHarborAuction a
 	where a.id = @auction_id
+
 		
-		if(CURRENT_TIMESTAMP < @end_time)
-			print ('STILL GOING')
+		if(CURRENT_TIMESTAMP < @end_time and @status = 'ACTIVE')
+			print ('STILL GOING');
+
+		else if(@status = 'ENDED' and (select a.closing_fee from ZHarborAuction a where a.id = @auction_id) is NULL)
+			BEGIN
+
+			select @end_price = a.end_price
+			from ZHarborAuction a
+			where a.id = @auction_id
+
+			--Add 25 cents
+			set @closing_fee = dbo.whichClosing(@end_price) +0.25;
+
+			select @winner = a.winner_name
+			from ZHarborAuction a
+			where a.id = @auction_id;
+
+			UPDATE ZHarborAuction
+				SET closing_fee = @closing_fee
+				WHERE id = @auction_id;
+
+			UPDATE ZHarborAuction
+				SET [status] = 'ENDED'
+				WHERE id = @auction_id;
+
+				print('AUCTION JUST ENDED, THE WINNER IS')
+				print(@winner)
+				print('AND HE PAYS:')
+				print(@end_price)
+			END
 		else if (@status = 'ACTIVE')
 			BEGIN
 
-			declare @end_price money
-			declare @closing_fee money
+			--declare @end_price money
+			--declare @closing_fee money
 
 
 			select top 1 @end_price = h.current_bid
@@ -467,6 +499,7 @@ as
 BEGIN
 	declare @buyItNowPrice money
 	declare @status varchar(30)
+	declare @rowNumber numeric(18,0)
 
 	select @buyItNowPrice = a.buyNow
 	from ZHarborAuction a
@@ -476,14 +509,22 @@ BEGIN
 	from ZHarborAuction a
 	where a.id = @auction_id
 
+	select @rowNumber = count(*) 
+	from ZHarborBidHistory a
+	where a.auction_id = @auction_id;
 
-	if(@buyItNowPrice != NULL and @status = 'ACTIVE')
+	print(@buyItNowPrice);
+	print(@status);
+	print(@rowNumber);
+
+
+	if((select a.buyNow from ZHarborAuction a where a.id = @auction_id) is not NULL and @status = 'ACTIVE' and @rowNumber = 0)
 		BEGIN
 			insert into ZHarborBidHistory values (next value for id_iterator, @auction_id,  @buyer_id, @buyItNowPrice, CURRENT_TIMESTAMP);
 
 			UPDATE ZHarborAuction
-				SET end_price = @buyItNowPrice, [status] = 'ENDED'
-				WHERE id = @auction_id;
+				SET end_price = @buyItNowPrice, [status] = 'ENDED', winner_id = @buyer_id, winner_name = (select c.name from ZHarborCustomer c where c.id = @buyer_id)
+				WHERE  id = @auction_id;
 
 		END
 	else
