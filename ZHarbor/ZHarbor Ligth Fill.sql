@@ -14,7 +14,7 @@ create sequence fill_id start with 0 increment by 1;
 
 -----------FILL CUSTOMER TABLE---------------------------
 declare @cnt int = 0;
-declare @stop int = 10000;
+declare @stop int = 200;
 while @cnt < @stop
 begin
 
@@ -31,7 +31,7 @@ end;
 --------------Generate Sellers------------------------------
 alter sequence fill_id restart with 0;
 set @cnt = 0;
-set @stop = 500;
+set @stop = 100;
 while @cnt < @stop
 begin
 insert into ZHarborSeller values
@@ -42,7 +42,7 @@ end;
 -------------Generate Auctions-------------------------------------------------
 alter sequence fill_id restart with 0;
 set @cnt = 0;
-set @stop = 2000;
+set @stop = 25;
 while @cnt < @stop
 begin
 if(@cnt%5  = 0)
@@ -96,7 +96,3 @@ select * from ZHarborAuction;
 select s.customer_id, c.[name], s.tax_id
 from ZHarborSeller s 
 	inner join ZHarborCustomer c on (c.id = s.customer_id);
-
-
-
-

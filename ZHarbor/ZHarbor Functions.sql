@@ -44,7 +44,7 @@ begin
 
 	/*
 	select @current_price = a.current_bid
-		from [dbo].ZHarborBidHistory a
+		from [dbo].ZHarborValidBid a
 		where a.id = @auction_id
 	*/
 
@@ -119,7 +119,7 @@ END;
 drop trigger Bidlog
 
 GO
-create trigger Bidlog on ZHarborBidLog
+create trigger Bidlog on ZHarborMaxBid
 after insert as
 BEGIN
 
@@ -140,7 +140,7 @@ declare @inserted_id numeric (18,0)
 			from inserted i;
 
 	select top 1 @previous_id = h.buyer_id
-	from ZHarborBidHistory h
+	from ZHarborValidBid h
 	where h.auction_id = @auction
 	order by date desc
 
@@ -151,7 +151,7 @@ declare @inserted_id numeric (18,0)
 
 	select top 1 @current_valid_bid = b.current_bid
 	from ZHarborAuction a
-			inner join ZHarborBidHistory b on (b.auction_id = a.id)
+			inner join ZHarborValidBid b on (b.auction_id = a.id)
 			where b.auction_id = @auction
 			order by current_bid desc
 
@@ -159,7 +159,7 @@ declare @inserted_id numeric (18,0)
 
 
 	declare bid_Cursor cursor for 
-		select top 2 b.bid_max from ZHarborBidLog b
+		select top 2 b.bid_max from ZHarborMaxBid b
 		where b.auction_id = @auction
 		order by bid_max desc;
 
@@ -180,96 +180,95 @@ declare @inserted_id numeric (18,0)
 
 	if(CURRENT_TIMESTAMP < @end_time and @status = 'ACTIVE')
 	BEGIN
-		if (@bid_Second is NULL and @inserted_bid >= @first)
-		BEGIN
-		declare @buyer_id numeric(18,0)
-		declare @starting_price money
-		declare @auction_id numeric (18,0)
-		--declare @id numeric (18,0)
-
-		select @buyer_id = i.buyer_id
-			from inserted i
-
-		select @auction_id = i.auction_id
-			from inserted i
-
-		select @starting_price = a.starting_price
-			from inserted i
-			inner join ZHarborAuction a on (a.id = i.auction_id)
-
-		--set @id = next value for id_iterator
-
-			insert into ZHarborBidHistory 
-			values(next value for id_iterator, @auction_id, @buyer_id, @starting_price , CURRENT_TIMESTAMP)
-		END
-		else if(@inserted_bid > @current_valid_bid and @actual_id != @previous_id)
-		BEGIN
-			declare @max_bid money
-			declare @current_bid money
-			declare @current money
-
-			
-			select @max_bid = i.bid_max
-			from inserted i
-
-		--Select the top current bid from the history
-				select top 1 @current = b.current_bid
-				from ZHarborAuction a
-				inner join ZHarborBidHistory b on (b.auction_id = a.id)
-				where b.auction_id = @auction
-				order by current_bid desc
-
-			if(@max_bid > @bid_Second+[dbo].whichIncrement(@current))
+				if (@bid_Second is NULL and @inserted_bid >= @first)
 				BEGIN
+				declare @buyer_id numeric(18,0)
+				declare @starting_price money
+				declare @auction_id numeric (18,0)
+				--declare @id numeric (18,0)
+
+				select @buyer_id = i.buyer_id
+					from inserted i
+
+				select @auction_id = i.auction_id
+					from inserted i
+
+				select @starting_price = a.starting_price
+					from inserted i
+					inner join ZHarborAuction a on (a.id = i.auction_id)
 
 				--set @id = next value for id_iterator
 
-				select @buyer_id = i.buyer_id
-				from inserted i
-
-				select @auction_id = i.auction_id
-				from inserted i
-
-				set @current_bid = @bid_Second + [dbo].whichIncrement(@bid_Second)
-
-				insert into ZHarborBidHistory values
-				(next value for id_iterator, @auction_id, @buyer_id, @current_bid, CURRENT_TIMESTAMP)
-
+					insert into ZHarborValidBid 
+					values(next value for id_iterator, @auction_id, @buyer_id, @starting_price , CURRENT_TIMESTAMP)
 				END
 
-			else --TODO: Proxy Bidding.
+				else if(@inserted_bid > @current_valid_bid and @actual_id != @previous_id)
 				BEGIN
+					declare @current_bid money
+					--declare @current money
 
-					select @buyer_id = i.buyer_id
-					from inserted i
 
-					select @auction_id = i.auction_id
-					from inserted i
+			
 
-					select @current_bid = i.bid_max
-					from inserted i
+				--Select the top current bid from the history
+						/*select top 1 @current = b.current_bid
+						from ZHarborAuction a
+						inner join ZHarborValidBid b on (b.auction_id = a.id)
+						where b.auction_id = @auction
+						order by current_bid desc
+						*/
+								if(@inserted_bid > @bid_Second+[dbo].whichIncrement(@current_valid_bid))
+									BEGIN
 
-					insert into ZHarborBidHistory 
-					values(next value for id_iterator,@auction_id, @buyer_id, @current_bid , CURRENT_TIMESTAMP)
-					/*select @inserted_id = i.id from inserted i
-					delete from ZHarborBidLog where id = @inserted_id
-					*/
-				END
+									--set @id = next value for id_iterator
 
-		END
-		else
-				BEGIN
-				
-				select @inserted_id = i.id from inserted i
-				delete from ZHarborBidLog where id = @inserted_id
-				END
-					--//TODO: Check dates
-		END
-	
+									select @buyer_id = i.buyer_id
+									from inserted i
+
+									select @auction_id = i.auction_id
+									from inserted i
+
+									set @current_bid = @bid_Second + [dbo].whichIncrement(@bid_Second)
+
+									insert into ZHarborValidBid values
+									(next value for id_iterator, @auction_id, @buyer_id, @current_bid, CURRENT_TIMESTAMP)
+
+									END
+
+								else if(@inserted_bid > @bid_Second) --TODO: Proxy Bidding.
+									BEGIN
+
+										select @buyer_id = i.buyer_id
+										from inserted i
+
+										select @auction_id = i.auction_id
+										from inserted i
+
+										select @current_bid = i.bid_max
+										from inserted i
+
+										insert into ZHarborValidBid 
+										values(next value for id_iterator,@auction_id, @buyer_id, @current_bid , CURRENT_TIMESTAMP)
+					
+									END
+								else
+									BEGIN
+										select @inserted_id = i.id from inserted i
+										delete from ZHarborMaxBid where id = @inserted_id
+									END
+					END
+
+					else
+					BEGIN
+						select @inserted_id = i.id from inserted i
+						delete from ZHarborMaxBid where id = @inserted_id
+					END
+	END
 	else
 	BEGIN 
 		select @inserted_id = i.id from inserted i
-		delete from ZHarborBidLog where id = @inserted_id
+		delete from ZHarborMaxBid where id = @inserted_id
 	END
 END
 GO
@@ -316,10 +315,85 @@ GO
 create procedure placeBidAmount @buyer_id numeric(18,0), @auction_id numeric(18,0), @amount money
 as
 BEGIN
+	declare @seller numeric (18,0)
+
+	select @seller = s.customer_id
+	from ZHarborAuction a
+	inner join ZHarborSeller s on (a.seller_id = s.customer_id)
+	where a.id = @auction_id;
+
+
+	if(@buyer_id = @seller)
+		select 'You cannot bid on your own bid!' as WARNING
+	else
+		BEGIN
+		declare @id numeric(18, 0)
+		set @id = next value for id_iterator  --ID ITERATOR MIGHT NEED TO BE REFACTORED
+		insert into dbo.ZHarborMaxBid values (@id, @buyer_id,  @auction_id, @amount);
+		END;
+END
+GO
+-----------------------------------------------
+/* MIGHT BE USEFUL LATER
+drop procedure placeRandom
+GO
+create procedure placeRandom @amount money
+as
+BEGIN
+
 	declare @id numeric(18, 0)
+	declare @buyer_id numeric(18, 0)
+	declare @auction_id numeric(18, 0)
+
 	set @id = next value for id_iterator  --ID ITERATOR MIGHT NEED TO BE REFACTORED
+	set @buyer_id = (select FLOOR(RAND()*(1000-1+1))+1)
+	set @auction_id = (select FLOOR(RAND()*(2000-1+1))+1)
 	
-	insert into dbo.ZHarborBidLog values (@id, @buyer_id,  @auction_id, @amount);
+	insert into dbo.ZHarborMaxBid values (@id, @buyer_id,  @auction_id, @amount);
+END
+GO
+*/
+--------------------------------------------------
+
+drop procedure cancelAuction
+GO
+create procedure cancelAuction @auction_id numeric(18,0)
+as
+BEGIN
+
+	declare @end_price money
+	declare @closing_fee money
+	declare @winner varchar(30)
+	declare @winner_id numeric (18,0)
+
+			select top 1 @end_price = b.current_bid
+			from ZHarborAuction a
+			inner join ZHarborValidBid b on (b.auction_id = a.id)
+			where a.id = @auction_id
+			order by current_bid desc
+
+			set @closing_fee = dbo.whichClosing(@end_price);
+
+			select top 1 @winner_id = h.buyer_id
+			from ZHarborValidBid h 
+			inner join ZHarborAuction a on (a.id = h.auction_id)
+			where h.auction_id = @auction_id
+			order by current_bid desc
+
+			select top 1 @winner = c.name
+			from ZHarborValidBid h 
+			inner join ZHarborAuction a on (a.id = h.auction_id)
+			inner join ZHarborCustomer c on (c.id = h.buyer_id)
+			where h.auction_id = @auction_id
+			order by current_bid desc
+
+			UPDATE ZHarborAuction
+				SET closing_fee = @closing_fee, winner_id = @winner_id, winner_name = @winner
+				WHERE id = @auction_id;
+
+			UPDATE ZHarborAuction
+				SET end_price = @end_price, [status] = 'ENDED', end_time = CURRENT_TIMESTAMP
+				WHERE id = @auction_id;
 END
 GO
 
@@ -336,14 +410,14 @@ BEGIN
 	declare @amount money
 
 	select top 1 @amount =  h.current_bid
-	from dbo.ZHarborBidHistory h
-	inner join dbo.ZHarborBidLog l on (l.auction_id = h.auction_id)
+	from dbo.ZHarborValidBid h
+	inner join dbo.ZHarborMaxBid l on (l.auction_id = h.auction_id)
 	where l.auction_id = @auction_id
 	order by current_bid desc
 
 	set @amount = @amount * (1 + @percent)
 
-	insert into dbo.ZHarborBidLog values (@id, @buyer_id,  @auction_id, @amount);
+	insert into dbo.ZHarborMaxBid values (@id, @buyer_id,  @auction_id, @amount);
 END
 GO
 
@@ -356,7 +430,7 @@ create procedure displayEffectiveBid @auction_id numeric(18,0)
 as
 BEGIN
 	select c.name, h.current_bid
-	from dbo.ZHarborBidHistory h
+	from dbo.ZHarborValidBid h
 	inner join dbo.ZHarborAuction a on (a.id = h.auction_id)
 	inner join dbo.ZHarborCustomer c on (c.id = h.buyer_id)
 	where h.auction_id = @auction_id
@@ -389,6 +463,7 @@ BEGIN
 		if(CURRENT_TIMESTAMP < @end_time and @status = 'ACTIVE')
 			print ('STILL GOING');
 
+		/*--------------------------------------------------------------------------------
 		else if(@status = 'ENDED' and (select a.closing_fee from ZHarborAuction a where a.id = @auction_id) is NULL)
 			BEGIN
 
@@ -408,23 +483,25 @@ BEGIN
 				WHERE id = @auction_id;
 
 			UPDATE ZHarborAuction
-				SET [status] = 'ENDED'
+				SET [status] = 'ENDED', end_time = CURRENT_TIMESTAMP
 				WHERE id = @auction_id;
 
 				print('AUCTION JUST ENDED, THE WINNER IS')
 				print(@winner)
 				print('AND HE PAYS:')
 				print(@end_price)
-			END
+			END*/
 		else if (@status = 'ACTIVE')
-			BEGIN
+			EXEC dbo.cancelAuction @auction_id = @auction_id;
+		/*BEGIN
 
+			
 			--declare @end_price money
 			--declare @closing_fee money
 
 
 			select top 1 @end_price = h.current_bid
-			from ZHarborBidHistory h
+			from ZHarborValidBid h
 			where h.auction_id = @auction_id
 			order by current_bid desc
 
@@ -432,17 +509,17 @@ BEGIN
 
 
 			select top 1 @winner_id = c.id
-			from ZHarborBidHistory h 
+			from ZHarborValidBid h 
 			inner join ZHarborAuction a on (a.id = h.auction_id)
-			inner join ZHarborBidLog b on (b.auction_id = a.id)
+			inner join ZHarborMaxBid b on (b.auction_id = a.id)
 			inner join ZHarborCustomer c on (c.id = b.buyer_id)
 			where h.auction_id = @auction_id
 			order by current_bid desc
 
 			select top 1 @winner = c.name
-			from ZHarborBidHistory h 
+			from ZHarborValidBid h 
 			inner join ZHarborAuction a on (a.id = h.auction_id)
-			inner join ZHarborBidLog b on (b.auction_id = a.id)
+			inner join ZHarborMaxBid b on (b.auction_id = a.id)
 			inner join ZHarborCustomer c on (c.id = b.buyer_id)
 			where h.auction_id = @auction_id
 			order by current_bid desc
@@ -453,7 +530,7 @@ BEGIN
 				WHERE id = @auction_id;
 
 			UPDATE ZHarborAuction
-				SET end_price = @end_price, [status] = 'ENDED'
+				SET end_price = @end_price, [status] = 'ENDED', end_time = CURRENT_TIMESTAMP
 				WHERE id = @auction_id;
 
 				print('AUCTION JUST ENDED, THE WINNER IS')
@@ -462,6 +539,7 @@ BEGIN
 				print(@end_price)
 
 			END
+			*/
 		else
 			print ('AUCTION ALREADY ENDED')
 END
@@ -481,9 +559,10 @@ BEGIN
 	select @end_time = a.end_time 
 	from ZHarborAuction a
 	where a.seller_id = @seller_id
-	 */
-	select a.id, a.item_name, a.starting_time, (select datediff(MINUTE, GETDATE(), a.end_time )) as Remainig_Minutes, a.status, a.end_price, a.winner_name
+*/
+	select a.id as Auction_ID, a.item_name, a.starting_price ,a.starting_time, (select datediff(MINUTE, GETDATE(), a.end_time )) as Remainig_Minutes, a.status, a.end_price, a.winner_name
 	from ZHarborAuction a
+	--inner join ZHarborValidBid v on (v.auction_id = a.id)
 	where a.seller_id = @seller_id
 	order by starting_time desc
 END
@@ -510,7 +589,7 @@ BEGIN
 	where a.id = @auction_id
 
 	select @rowNumber = count(*) 
-	from ZHarborBidHistory a
+	from ZHarborValidBid a
 	where a.auction_id = @auction_id;
 
 	print(@buyItNowPrice);
@@ -520,10 +599,12 @@ BEGIN
 
 	if((select a.buyNow from ZHarborAuction a where a.id = @auction_id) is not NULL and @status = 'ACTIVE' and @rowNumber = 0)
 		BEGIN
-			insert into ZHarborBidHistory values (next value for id_iterator, @auction_id,  @buyer_id, @buyItNowPrice, CURRENT_TIMESTAMP);
+			insert into ZHarborValidBid values (next value for id_iterator, @auction_id,  @buyer_id, @buyItNowPrice, CURRENT_TIMESTAMP);
 
 			UPDATE ZHarborAuction
-				SET end_price = @buyItNowPrice, [status] = 'ENDED', winner_id = @buyer_id, winner_name = (select c.name from ZHarborCustomer c where c.id = @buyer_id)
+				SET end_price = @buyItNowPrice, [status] = 'ENDED', 
+				winner_id = @buyer_id, winner_name = (select c.name from ZHarborCustomer c where c.id = @buyer_id), 
+				end_time = CURRENT_TIMESTAMP, closing_fee = dbo.whichClosing(@buyItNowPrice +0.25)
 				WHERE  id = @auction_id;
 
 		END
