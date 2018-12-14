@@ -310,7 +310,9 @@ BEGIN
 
 	select @listing_price = dbo.whichListing(i.starting_price)
 	from inserted i
-	
+
+	if(@buyItNowPrice is not NULL)
+		set @listing_price = @listing_price +0.25;
 	
 
 	UPDATE ZHarborAuction
@@ -446,7 +448,7 @@ GO
 create procedure displayEffectiveBid @auction_id numeric(18,0)
 as
 BEGIN
-	select c.name, h.current_bid
+	select c.id, c.name, h.current_bid
 	from dbo.ZHarborValidBid h
 	inner join dbo.ZHarborAuction a on (a.id = h.auction_id)
 	inner join dbo.ZHarborCustomer c on (c.id = h.buyer_id)
@@ -539,7 +541,7 @@ BEGIN
 			UPDATE ZHarborAuction
 				SET end_price = @buyItNowPrice, [status] = 'ENDED', 
 				winner_id = @buyer_id, winner_name = (select c.name from ZHarborCustomer c where c.id = @buyer_id), 
-				end_time = CURRENT_TIMESTAMP, closing_fee = dbo.whichClosing(@buyItNowPrice +0.25)
+				end_time = CURRENT_TIMESTAMP, closing_fee = ROUND(dbo.whichClosing(@buyItNowPrice), 2)
 				WHERE  id = @auction_id;
 
 		END
