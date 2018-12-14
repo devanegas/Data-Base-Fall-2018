@@ -87,9 +87,9 @@ else
 	END
 end;
 
-select count(*) from ZHarborCustomer;
-select count(*) from ZHarborSeller;
-select count(*) from ZHarborAuction;
+select count(*) as NumberOfCustomers from ZHarborCustomer;
+select count(*) as NumberOfSellers from ZHarborSeller;
+select count(*) as NumberOfAuctions from ZHarborAuction;
 
 select * from ZHarborAuction;
 

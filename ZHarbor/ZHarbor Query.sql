@@ -111,8 +111,10 @@ insert into ZHarborMaxBid values (1, 2, 0, 105);
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 102.5 then 'PASS' else 'FAIL' END Value2;
 insert into ZHarborMaxBid values (2, 1, 0, 110); 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 107.5 then 'PASS' else 'FAIL' END Value3;
+WAITFOR DELAY '00:00:01'
 insert into ZHarborMaxBid values (3, 3, 0, 250); 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 112.5 then 'PASS' else 'FAIL' END Value4;
+WAITFOR DELAY '00:00:01'
 insert into ZHarborMaxBid values (4, 2, 0, 259); 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 255 then 'PASS' else 'FAIL' END Value5;
 
@@ -193,8 +195,10 @@ select case (select top 1 h.current_bid from ZHarborValidBid h order by current_
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 110
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 107.5 then 'PASS' else 'FAIL' END Value3;
 EXEC dbo.placeBidAmount @buyer_id = 3, @auction_id = 0, @amount = 250
+WAITFOR DELAY '00:00:01'
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 112.5 then 'PASS' else 'FAIL' END Value4;
 EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 0, @amount = 259
+WAITFOR DELAY '00:00:01'
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 255 then 'PASS' else 'FAIL' END Value5;
 
 select * from ZHarborMaxBid
@@ -226,28 +230,28 @@ insert into ZHarborAuction values (0, 0, 0.01, NULL, '2019-11-29 19:15:00.000', 
 --Then this
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 0.10
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 0.01 then 'PASS' else 'FAIL' END EdgeCase1;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 0, @amount = 0.99
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 0.15 then 'PASS' else 'FAIL' END EdgeCase2;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 1.04
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 1.04 then 'PASS' else 'FAIL' END EdgeCase3;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 0, @amount = 1.35 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 1.29 then 'PASS' else 'FAIL' END EdgeCase4;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 100 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 1.60 then 'PASS' else 'FAIL' END EdgeCase5;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 0, @amount = 150 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 102.50 then 'PASS' else 'FAIL' END EdgeCase6;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 249.99 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 152.5 then 'PASS' else 'FAIL' END EdgeCase7;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 0, @amount = 300 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 252.49 then 'PASS' else 'FAIL' END EdgeCase8;
-
+WAITFOR DELAY '00:00:01'
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 400 
 select case (select top 1 h.current_bid from ZHarborValidBid h order by current_bid desc) when 305 then 'PASS' else 'FAIL' END EdgeCase9;
 
@@ -363,14 +367,14 @@ delete from ZHarborAuction;
 
 insert into ZHarborAuction values (0, 0, 100, NULL, CURRENT_TIMESTAMP + '00:00:10', NULL, NULL, NULL, NULL, 'Green Chair', 'Its a green chair!', NULL, NULL, NULL);
 insert into ZHarborAuction values (1, 0, 250, NULL, '2019-11-29 20:59:00.000', NULL, NULL, NULL, NULL, 'Yellow Chair', 'Its a yellow chair!', NULL, NULL, NULL);
-
+WAITFOR DELAY '00:00:01'
 
 --Insert a couple of rows
 
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 100
 EXEC dbo.placeBidAmount @buyer_id = 2, @auction_id = 0, @amount = 110
 EXEC dbo.placeBidAmount @buyer_id = 1, @auction_id = 0, @amount = 150
-
+WAITFOR DELAY '00:00:01'
 
 select * from ZHarborValidBid
 select * from ZHarborAuction
@@ -385,6 +389,7 @@ GO 10
 select * from ZHarborValidBid
 select * from ZHarborAuction
 
+WAITFOR DELAY '00:00:01'
 select case (select top 1 a.[status] from ZHarborValidBid h inner join ZHarborAuction a on (a.id = h.auction_id)) when 'ENDED' then 'PASS' else 'FAIL' END correctStatus;
 select case (select top 1 a.end_price from ZHarborValidBid h inner join ZHarborAuction a on (a.id = h.auction_id)) when 112.50 then 'PASS' else 'FAIL' END correctEndPrice;
 
@@ -415,7 +420,7 @@ select * from ZHarborAuction
 --Sellers can create a report of all the active and 
 --closed auctions for their account, sorted by auction_starting date
 
-
+WAITFOR DELAY '00:00:01'
 select 'IF THERE ARE TWO REPORTS, THE TEST PASSES'
 EXEC dbo.sellerStats @seller_id = 0 
 EXEC dbo.sellerStats @seller_id = 1
@@ -464,15 +469,6 @@ select 'TRYING TO USE THE BUY IT NOW AFTER A BID IS PLACED' AS MESSAGE
 EXEC dbo.buyItNow @buyer_id = 1, @auction_id = 1 
 select case (select top 1 v.current_bid from ZHarborValidBid v where v.auction_id = 1) when 250 then 'PASS' else 'FAIL' END BuyItNowDoesnotWork;
 
-select * from ZHarborValidBid
-select * from ZHarborAuction
-
-
-EXEC dbo.isValid @auction_id = 1
-
-
-select * from ZHarborValidBid
-select * from ZHarborAuction
 
 ----------------------------------------------------------------------
 --////////////////////////////////////////////////////////////////////
